@@ -4,35 +4,32 @@ import string
 
 
 def dynamodb_create():
-    dynamodb = boto3.resource('dynamodb')
+    dynamodb_client = boto3.client('dynamodb')
 
 # Create the DynamoDB table.
-    table = dynamodb.create_table(
-        TableName='terraform_locks',
-        KeySchema=[
-            {
-                'AttributeName': 'LockID',
-                'KeyType': 'HASH'
+    try:
+        response = dynamodb_client.create_table(
+            TableName='terraform_locks',
+            KeySchema=[
+                {
+                    'AttributeName': 'LockID',
+                    'KeyType': 'HASH'
+                }
+            ],
+            AttributeDefinitions=[
+                {
+                    'AttributeName': 'LockID',
+                    'AttributeType': 'S'
+                }
+            ],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5,
+                'WriteCapacityUnits': 5
             }
-        ],
-        AttributeDefinitions=[
-            {
-                'AttributeName': 'LockID',
-                'AttributeType': 'S'
-            }
-        ],
-        ProvisionedThroughput={
-            'ReadCapacityUnits': 5,
-            'WriteCapacityUnits': 5
-        }
-    )
-
-    # Wait until the table exists.
-    table.meta.client.get_waiter('table_exists').wait(
-        TableName='terraform_locks')
-
-    # Print out some data about the table.
-    print(table.item_count)
+        )
+    except dynamodb_client.exceptions.ResourceInUseException:
+        print('A table called terraform_locks already exists')
+        pass
 
 
 def s3_backend_create(bucket_name=None, region_name='eu-west-2'):
@@ -72,4 +69,4 @@ def s3_backend_create(bucket_name=None, region_name='eu-west-2'):
 
 
 dynamodb_create()
-s3_backend_create()
+# s3_backend_create()
